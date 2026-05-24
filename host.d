@@ -1,3 +1,8 @@
+/*
+SPDX-FileContributor:Th3Fi
+SPDX-FileType: SOURC
+SPDX-License-Identifier: GPLv3
+*/
 import std.algorithm : splitter;
 import std.array : array;
 import std.string : chomp, indexOf, indexOfAny;
