@@ -7,8 +7,16 @@ import std.algorithm : splitter;
 import std.array : array;
 import std.string : chomp, indexOf, indexOfAny;
 import std.utf;
-import std.parallelism : task;
+import std.concurrency;
 import std.stdio;
+
+// struct for async testing
+struct Output{
+    int[] resultUTF;
+    int[] resultMerge;
+}
+
+//planned function for allocating the amount of threads used for variable hardware
 
 //makes words
 auto tokenMake(string input){
@@ -17,7 +25,7 @@ auto tokenMake(string input){
 }
 
 // makes words into utf-8
-void tokenEncode(string input, int workerId){
+void tokenEncode(string input, int workerId, Tid parent){
     int[] output;
     {
         int i;
@@ -27,18 +35,28 @@ void tokenEncode(string input, int workerId){
             ++i;
         }
     }
-    writeln(workerId, " | ", input, " | ", output[]); // test worker outputs
+
+    int[] resultUTF;
+    resultUTF ~= output;
+
+    // writeln(workerId, " | ", input, " | ", output[]); // test worker outputs
 
     //detect pairs (ballz, haha he said balls in the comments)
+    int[] mergePair;
     {
-        int[] mergePair;
         for(int i = 0; i != ((output.length) - 1) ; ++i){
-        writeln(workerId, " | oper : ", output[i], " ", output[i+1] , " | paired : ", mergePair[]);
+        // writeln(workerId, " | oper : ", output[i], " ", output[i+1] , " | paired : ", mergePair[]); //debug line for this block
             if(output[i] == output[i + 1]){
                 mergePair ~= output[i] + output[i+1];
             }
         }
+        //writeln(thisTid, " | ", workerId); // testing for thread number
     }
+    int[] resultMerge;
+    resultMerge ~= mergePair[];
+
+    Output result = Output(resultUTF, resultMerge);
+    send(parent, workerId, cast(immutable) result);
 }
 
 void main(){
@@ -50,11 +68,16 @@ void main(){
     // half this code was written on my headset with a 3.5in SPI display, get on my level
     { // prevents count duku from escaping your 2GBs of cloud DDR at AWS
         int count;
+        Tid[] workers;
         foreach(word; words){
-            auto worker = task!tokenEncode(word, count);
-            worker.executeInNewThread();
+            workers ~= spawn(&tokenEncode, word, count, thisTid);
             ++count;
         }
-    }
 
+        foreach(i; 0 .. count){
+            receive((int workerId, Output result){
+                writeln(workerId, " | ", result);
+            });
+        }
+    }
 }
