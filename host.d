@@ -9,7 +9,7 @@ import std.array : array;
 import std.string : chomp, indexOf, indexOfAny;
 import std.conv : to;
 import std.utf;
-import std.concurrency;
+import std.parallelism : task;
 import std.stdio;
 //
 struct Return{
@@ -31,7 +31,7 @@ auto tokenMake(string input){
 }
 
 // makes words into utf-8
-void tokenEncode(string input, int workerId, Tid parent){
+void tokenEncode(string input, int workerId){
     int[] output;
     {
         int i;
@@ -44,6 +44,7 @@ void tokenEncode(string input, int workerId, Tid parent){
 
     //detect pairs (ballz, haha he said balls in the comments)
     {
+        int[] mergePair;
         for(int i = 0; i != ((output.length) - 1) ; ++i){
             if(output[i] == output[i + 1]){
                 output[i] = output[i] + output[i+1];
@@ -71,9 +72,9 @@ void main(){
     // half this code was written on my headset with a 3.5in SPI display, get on my level
     { // prevents count duku from escaping your 2GBs of cloud DDR at AWS
         int count;
-        Tid[] workers;
         foreach(word; words){
-            workers ~= spawn(&tokenEncode, word, count, thisTid);
+            auto worker = task!tokenEncode(word, count);
+            worker.executeInNewThread();
             ++count;
         }
         writeln(workers);
@@ -88,4 +89,5 @@ void main(){
         }
         writeln(order);
     }
+
 }
