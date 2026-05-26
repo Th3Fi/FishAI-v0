@@ -1,19 +1,25 @@
 /*
 SPDX-FileContributor:Th3Fi
-SPDX-FileType: SOURC
+SPDX-FileType: SOURCE
 SPDX-License-Identifier: GPLv3
 */
+import std.algorithm.mutation: remove;
 import std.algorithm : splitter;
 import std.array : array;
 import std.string : chomp, indexOf, indexOfAny;
+import std.conv : to;
 import std.utf;
 import std.concurrency;
 import std.stdio;
+//
+struct Return{
+    int workerId;
+    int[] result;
+}
 
-// struct for async testing
-struct Output{
-    int[] resultUTF;
-    int[] resultMerge;
+struct ReturnIM{
+    immutable int workerId;
+    immutable int[] result;
 }
 
 //planned function for allocating the amount of threads used for variable hardware
@@ -36,27 +42,24 @@ void tokenEncode(string input, int workerId, Tid parent){
         }
     }
 
-    int[] resultUTF;
-    resultUTF ~= output;
-
-    // writeln(workerId, " | ", input, " | ", output[]); // test worker outputs
-
     //detect pairs (ballz, haha he said balls in the comments)
-    int[] mergePair;
     {
         for(int i = 0; i != ((output.length) - 1) ; ++i){
-        // writeln(workerId, " | oper : ", output[i], " ", output[i+1] , " | paired : ", mergePair[]); //debug line for this block
             if(output[i] == output[i + 1]){
-                mergePair ~= output[i] + output[i+1];
+                output[i] = output[i] + output[i+1];
+                output[i + 1] = 0;
+            }
+            if(output[i] == 0){
+                output[i] = output[i + 1];
+                output[i + 1] = 0;
             }
         }
-        //writeln(thisTid, " | ", workerId); // testing for thread number
     }
-    int[] resultMerge;
-    resultMerge ~= mergePair[];
+    output = remove! (a => a == 0)(output);
 
-    Output result = Output(resultUTF, resultMerge);
-    send(parent, workerId, cast(immutable) result);
+    writeln(output, " | ", workerId);
+    ReturnIM result = ReturnIM(workerId, cast(immutable) output);
+    send(parent, result);
 }
 
 void main(){
@@ -73,11 +76,16 @@ void main(){
             workers ~= spawn(&tokenEncode, word, count, thisTid);
             ++count;
         }
+        writeln(workers);
 
+        Return[] order;
+        order.length = workers.length;
         foreach(i; 0 .. count){
-            receive((int workerId, Output result){
-                writeln(workerId, " | ", result);
+            receive((ReturnIM result){
+            order[result.workerId] = cast(Return) result;
+            // writeln(workerId, " | " , output); // debug line
             });
         }
+        writeln(order);
     }
 }
