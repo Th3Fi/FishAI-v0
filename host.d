@@ -1,14 +1,28 @@
 /*
 SPDX-FileContributor:Th3Fi
-SPDX-FileType: SOURC
+SPDX-FileType: SOURCE
 SPDX-License-Identifier: GPLv3
 */
+import std.algorithm.mutation: remove;
 import std.algorithm : splitter;
 import std.array : array;
 import std.string : chomp, indexOf, indexOfAny;
+import std.conv : to;
 import std.utf;
 import std.parallelism : task;
 import std.stdio;
+//
+struct Return{
+    int workerId;
+    int[] result;
+}
+
+struct ReturnIM{
+    immutable int workerId;
+    immutable int[] result;
+}
+
+//planned function for allocating the amount of threads used for variable hardware
 
 //makes words
 auto tokenMake(string input){
@@ -27,18 +41,26 @@ void tokenEncode(string input, int workerId){
             ++i;
         }
     }
-    writeln(workerId, " | ", input, " | ", output[]); // test worker outputs
 
     //detect pairs (ballz, haha he said balls in the comments)
     {
         int[] mergePair;
         for(int i = 0; i != ((output.length) - 1) ; ++i){
-        writeln(workerId, " | oper : ", output[i], " ", output[i+1] , " | paired : ", mergePair[]);
             if(output[i] == output[i + 1]){
-                mergePair ~= output[i] + output[i+1];
+                output[i] = output[i] + output[i+1];
+                output[i + 1] = 0;
+            }
+            if(output[i] == 0){
+                output[i] = output[i + 1];
+                output[i + 1] = 0;
             }
         }
     }
+    output = remove! (a => a == 0)(output);
+
+    writeln(output, " | ", workerId);
+    ReturnIM result = ReturnIM(workerId, cast(immutable) output);
+    send(parent, result);
 }
 
 void main(){
@@ -55,6 +77,17 @@ void main(){
             worker.executeInNewThread();
             ++count;
         }
+        writeln(workers);
+
+        Return[] order;
+        order.length = workers.length;
+        foreach(i; 0 .. count){
+            receive((ReturnIM result){
+            order[result.workerId] = cast(Return) result;
+            // writeln(workerId, " | " , output); // debug line
+            });
+        }
+        writeln(order);
     }
 
 }
