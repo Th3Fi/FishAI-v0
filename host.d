@@ -6,12 +6,12 @@ SPDX-License-Identifier: GPLv3
 import std.algorithm.mutation: remove;
 import std.algorithm : splitter;
 import std.array : array;
-import std.string : chomp, indexOf, indexOfAny;
+import std.string : chomp;
 import std.conv : to;
-import std.utf;
-import std.parallelism : task;
+import std.utf : byUTF;
+import std.concurrency : spawn, receive, thisTid, Tid, send;
 import std.stdio;
-//
+
 struct Return{
     int workerId;
     int[] result;
@@ -31,7 +31,7 @@ auto tokenMake(string input){
 }
 
 // makes words into utf-8
-void tokenEncode(string input, int workerId){
+void tokenEncode(string input, int workerId, Tid parent){
     int[] output;
     {
         int i;
@@ -44,7 +44,6 @@ void tokenEncode(string input, int workerId){
 
     //detect pairs (ballz, haha he said balls in the comments)
     {
-        int[] mergePair;
         for(int i = 0; i != ((output.length) - 1) ; ++i){
             if(output[i] == output[i + 1]){
                 output[i] = output[i] + output[i+1];
@@ -73,8 +72,7 @@ void main(){
     { // prevents count duku from escaping your 2GBs of cloud DDR at AWS
         int count;
         foreach(word; words){
-            auto worker = task!tokenEncode(word, count);
-            worker.executeInNewThread();
+            spawn(&tokenEncode, word, count, thisTid);
             ++count;
         }
         writeln(workers);
@@ -89,5 +87,4 @@ void main(){
         }
         writeln(order);
     }
-
 }
