@@ -1,3 +1,8 @@
+/*
+SPDX-FileContributor:Th3Fi
+SPDX-FileType: SOURCE
+SPDX-License-Identifier: GPLv3
+*/
 module ai_functs.bpe;
 
 import std.array: array;
