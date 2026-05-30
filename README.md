@@ -2,8 +2,11 @@ Fish Super Intellegence (FSI) is a project to build a fully open source custom b
 
 Roadmap
 -tokenization --Finished
+
 -BPE          --In progress
+
 -Dictionary   --In progress
+
 -Nodes/AI stuff 
 
 compilation command for DMD (could work for LDC2 i have not tested);
